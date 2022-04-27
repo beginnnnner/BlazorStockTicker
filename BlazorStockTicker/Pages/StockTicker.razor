@@ -1,0 +1,87 @@
+﻿@page "/stockticker"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Syncfusion.Blazor.Grids
+@using BlazorStockTicker.Stocks
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
+
+<h1>ASP.NET SignalR Stock Ticker Sample</h1>
+ 
+<h2>Live Stock Table</h2>
+
+<div>
+    <SfGrid DataSource="@stocks.Values.ToList()" AllowPaging="true" >
+        <GridColumns>
+            <GridColumn Field=@nameof(Stock.Symbol) HeaderText="銘柄" TextAlign="TextAlign.Center"  Width="70"></GridColumn>
+            <GridColumn Field=@nameof(Stock.DayOpen) HeaderText="始値" Type="ColumnType.Number" TextAlign="TextAlign.Right"  Width="70"></GridColumn>
+            <GridColumn Field=@nameof(Stock.Price) HeaderText="価格" Type="ColumnType.Number" TextAlign="TextAlign.Right"  Width="70"></GridColumn>
+            <GridColumn Field=@nameof(Stock.Change) HeaderText="増減" Type="ColumnType.Number" Format="▲0.00;▼0.00" TextAlign="TextAlign.Right"  Width="70"></GridColumn>                   
+            <GridColumn Field=@nameof(Stock.PercentChange) HeaderText="増減率" Type="ColumnType.Number" Format="p2" TextAlign="TextAlign.Right" Width="70"></GridColumn>
+        </GridColumns>
+    </SfGrid>
+</div>
+
+<style>
+    body {
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        font-size: 16px;
+    }
+ 
+    #stockTable table {
+        border-collapse: collapse;
+    }
+ 
+    #stockTable table th, #stockTable table td {
+        padding: 2px 6px;
+    }
+ 
+    #stockTable table td {
+        text-align: right;
+    }
+ 
+    #stockTable .loading td {
+        text-align: left;
+    }
+</style>
+
+@code {
+    private HubConnection? connection;
+    private Dictionary<string, Stock> stocks = new Dictionary<string, Stock>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 接続を作成。"/stockTickerHub" は Program.cs で
+        // app.MapHub<StockTickerHub>("/stockTickerHub");
+        // としてマップしたエンドポイントらしい
+        connection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/stockTickerHub"))
+            .Build();
+
+        // StockTicker クラスの BroadcastStockPrice メソッドの 
+        // SendAsync("UpdateStockPrice", stock); で SignalR コ
+        // ンテキストを通じて下の On<Stock>() { ... } が起
+        // 動される。引数の stock に含まれる情報により株価情報
+        // の表示を更新する。
+        connection.On<Stock>("UpdateStockPrice", (stock) =>
+        {
+            if (stocks.ContainsKey(stock.Symbol))
+            {
+                stocks[stock.Symbol] = stock;
+            } else {
+                stocks.Add(stock.Symbol, stock);
+            }
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await connection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (connection is not null)
+        {
+            await connection.DisposeAsync();
+        }
+    }
+}
