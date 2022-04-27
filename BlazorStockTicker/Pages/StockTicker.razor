@@ -21,29 +21,6 @@
     </SfGrid>
 </div>
 
-<style>
-    body {
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 16px;
-    }
- 
-    #stockTable table {
-        border-collapse: collapse;
-    }
- 
-    #stockTable table th, #stockTable table td {
-        padding: 2px 6px;
-    }
- 
-    #stockTable table td {
-        text-align: right;
-    }
- 
-    #stockTable .loading td {
-        text-align: left;
-    }
-</style>
-
 @code {
     private HubConnection? connection;
     private Dictionary<string, Stock> stocks = new Dictionary<string, Stock>();
