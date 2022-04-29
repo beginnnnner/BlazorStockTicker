@@ -11,15 +11,28 @@
 
 <div>
     <SfGrid DataSource="@stocks.Values.ToList()" AllowPaging="true" >
+        <GridEvents QueryCellInfo="CellInfoHandler" TValue="Stock"></GridEvents> 
         <GridColumns>
-            <GridColumn Field=@nameof(Stock.Symbol) HeaderText="銘柄" TextAlign="TextAlign.Center"  Width="70"></GridColumn>
+            <GridColumn Field=@nameof(Stock.Symbol) HeaderText="銘柄" TextAlign="TextAlign.Center"  Width="70" ></GridColumn>
             <GridColumn Field=@nameof(Stock.DayOpen) HeaderText="始値" Type="ColumnType.Number" TextAlign="TextAlign.Right"  Width="70"></GridColumn>
             <GridColumn Field=@nameof(Stock.Price) HeaderText="価格" Type="ColumnType.Number" TextAlign="TextAlign.Right"  Width="70"></GridColumn>
-            <GridColumn Field=@nameof(Stock.Change) HeaderText="増減" Type="ColumnType.Number" Format="▲0.00;▼0.00" TextAlign="TextAlign.Right"  Width="70"></GridColumn>                   
+            <GridColumn Field=@nameof(Stock.Change) HeaderText="増減"  Type="ColumnType.Number" Format="▲0.00;▼0.00" TextAlign="TextAlign.Right"  Width="70"></GridColumn>                   
             <GridColumn Field=@nameof(Stock.PercentChange) HeaderText="増減率" Type="ColumnType.Number" Format="p2" TextAlign="TextAlign.Right" Width="70"></GridColumn>
         </GridColumns>
     </SfGrid>
 </div>
+
+<style> 
+    .negative-color{ 
+        color: red; 
+    } 
+    .positive-color{ 
+        color: lime; 
+    } 
+    .e-grid .e-spinner-pane{ /** Grid スピナーを非表示*/
+        display:none; 
+    } 
+</style> 
 
 @code {
     private HubConnection? connection;
@@ -52,6 +65,16 @@
         });
 
         await connection.StartAsync();
+    }
+
+    // セル変更イベント、マイナスなら赤にする
+    private void CellInfoHandler(QueryCellInfoEventArgs<Stock> e)
+    {
+        bool? isPositive = e.Column.Field == nameof(Stock.Change)        ? 0 <= e.Data.Change
+                         : e.Column.Field == nameof(Stock.PercentChange) ? 0 <= e.Data.PercentChange : null;
+
+        e.Cell.AddStyle(new string[] { isPositive == true  ? "color:lime"
+                                     : isPositive == false ? "color:red" : "" });
     }
 
     public async ValueTask DisposeAsync()
